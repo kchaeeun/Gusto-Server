@@ -3,6 +3,8 @@ package com.umc.gusto.domain.store.service;
 import com.umc.gusto.domain.myCategory.entity.Pin;
 import com.umc.gusto.domain.myCategory.repository.PinRepository;
 import com.umc.gusto.domain.review.entity.Review;
+import com.umc.gusto.domain.review.entity.ReviewImages;
+import com.umc.gusto.domain.review.repository.ReviewImagesRepository;
 import com.umc.gusto.domain.review.repository.ReviewRepository;
 import com.umc.gusto.domain.store.entity.OpeningHours;
 import com.umc.gusto.domain.store.entity.Store;
@@ -30,6 +32,7 @@ public class StoreServiceImpl implements StoreService{
     private final ReviewRepository reviewRepository;
     private final PinRepository pinRepository;
     private final OpeningHoursRepository openingHoursRepository;
+    private final ReviewImagesRepository reviewImagesRepository;
     private static final int PAGE_SIZE_FIRST = 3;
     private static final int PAGE_SIZE = 6;
 
@@ -39,6 +42,8 @@ public class StoreServiceImpl implements StoreService{
         for (Long storeId : storeIds) {
             Store store = storeRepository.findById(storeId)
                     .orElseThrow(() -> new GeneralException(Code.STORE_NOT_FOUND));
+            ReviewImages reviewImages = reviewImagesRepository.findByStore(store);
+            List<String> top3ReviewImages = reviewImages.getReviewImgList().subList(0, Math.min(3, reviewImages.getReviewImgList().size()));
             Long pinId = pinRepository.findByUserAndStoreStoreId(user, storeId);
             List<OpeningHours> openingHoursList = openingHoursRepository.findByStoreStoreId(storeId);
 
@@ -50,12 +55,6 @@ public class StoreServiceImpl implements StoreService{
                 );
                 businessDays.put(openingHours.getBusinessDay(), timing);
             }
-
-            List<Review> top3Reviews = reviewRepository.findFirst3ByStoreOrderByLikedDesc(store);
-
-            List<String> reviewImg = top3Reviews.stream()
-                    .map(review -> Optional.ofNullable(review.getImg1()).orElse(""))
-                    .collect(Collectors.toList());
             boolean isPinned = pinRepository.existsByUserAndStoreStoreId(user, storeId);
 
 
@@ -67,7 +66,7 @@ public class StoreServiceImpl implements StoreService{
                     .longitude(store.getLongitude())
                     .latitude(store.getLatitude())
                     .businessDay(businessDays)
-                    .reviewImg3(reviewImg)
+                    .reviewImg3(top3ReviewImages)
                     .pin(isPinned)
                     .build());
         }
@@ -85,11 +84,7 @@ public class StoreServiceImpl implements StoreService{
 //                .orElseThrow(() -> new GeneralException(Code.CATEGORY_NOT_FOUND));
         Long pinId = pinRepository.findByUserAndStoreStoreId(user, storeId);
 
-        List<Review> top4Reviews = reviewRepository.findFirst4ByStoreOrderByLikedDesc(store);
-
-        List<String> reviewImg = top4Reviews.stream()
-                .map(review -> Optional.ofNullable(review.getImg1()).orElse(""))
-                .collect(Collectors.toList());
+        ReviewImages reviewImages = reviewImagesRepository.findByStore(store);
 
         // reviews 페이징 처리 (3,6,6...)
         int pageSize;
@@ -129,7 +124,7 @@ public class StoreServiceImpl implements StoreService{
                 .categoryString(store.getCategoryString())
                 .storeName(store.getStoreName())
                 .address(store.getAddress())
-                .reviewImg4(reviewImg)
+                .reviewImg4(reviewImages.getReviewImgList())
                 .pin(isPinned)
                 .reviews(PagingResponse.builder()
                     .hasNext(reviews.hasNext())
