@@ -9,7 +9,8 @@ import com.umc.gusto.domain.myCategory.model.response.PagingResponse;
 import com.umc.gusto.domain.myCategory.model.response.PinByMyCategoryResponse;
 import com.umc.gusto.domain.myCategory.repository.MyCategoryRepository;
 import com.umc.gusto.domain.myCategory.repository.PinRepository;
-import com.umc.gusto.domain.review.entity.Review;
+import com.umc.gusto.domain.review.entity.ReviewImages;
+import com.umc.gusto.domain.review.repository.ReviewImagesRepository;
 import com.umc.gusto.domain.review.repository.ReviewRepository;
 import com.umc.gusto.domain.store.entity.Store;
 import com.umc.gusto.domain.user.entity.User;
@@ -20,6 +21,7 @@ import com.umc.gusto.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -29,12 +31,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@EnableScheduling
 public class MyCategoryServiceImpl implements MyCategoryService {
 
     private final MyCategoryRepository myCategoryRepository;
     private final PinRepository pinRepository;
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
+    private final ReviewImagesRepository reviewImagesRepository;
 
     private static final int MY_CATEGORY_PAGE_SIZE = 7;
     private static final int PIN_PAGE_SIZE = 5;
@@ -163,16 +167,17 @@ public class MyCategoryServiceImpl implements MyCategoryService {
         List<PinByMyCategoryResponse> result = pinList.stream()                                     // townName을 기준으로 보일 수 있는 store가 포함된 pin만 보이기
                 .map(pin -> {
                     Store store = pin.getStore();
-                    Optional<Review> topReviewOptional = reviewRepository.findFirstByStoreOrderByLikedDesc(store);               // 가장 좋아요가 많은 review
-                    String reviewImg = topReviewOptional.map(Review::getImg1).orElse("");                               // 가장 좋아요가 많은 review 이미지(TO DO: 3개 출력으로 변경)
-                    Integer reviewCnt = reviewRepository.countByStoreAndUserNickname(store, finalUser.getNickname());                        // 내가 작성한 리뷰의 개수 == 방문 횟수
+                    // 가장 좋아요가 많은 review
+                    ReviewImages reviewImages = reviewImagesRepository.findByStore(store);                                                                  // 가장 좋아요가 많은 review 이미지 3개
+                    List<String> top3ReviewImages = reviewImages.getReviewImgList().subList(0, Math.min(3, reviewImages.getReviewImgList().size()));        // 리뷰 이미지 리스트의 크기가 3개보다 작을 경우에도 인덱스 오류를 방지하
+                    Integer reviewCnt = reviewRepository.countByStoreAndUserNickname(store, finalUser.getNickname());                                       // 내가 작성한 리뷰의 개수 == 방문 횟수
 
                     return  PinByMyCategoryResponse.builder()
                             .pinId(pin.getPinId())
                             .storeId(store.getStoreId())
                             .storeName(store.getStoreName())
                             .address(store.getAddress())
-                            .reviewImg(reviewImg)
+                            .reviewImg3(top3ReviewImages)
                             .reviewCnt(reviewCnt)
                             .build();
                 })
@@ -183,6 +188,7 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 .result(result)
                 .build();
     }
+
 
     @Transactional
     public void createMyCategory(User user, CreateMyCategoryRequest createMyCategory) {
