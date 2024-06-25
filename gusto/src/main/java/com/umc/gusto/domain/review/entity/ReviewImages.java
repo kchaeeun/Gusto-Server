@@ -23,6 +23,7 @@ public class ReviewImages extends BaseTime {
     @JoinColumn(name = "storeId")
     private Store store;
 
+    @Builder.Default
     @ElementCollection(fetch = FetchType.LAZY)
     @JoinTable(name = "reviewImgList", joinColumns = @JoinColumn(name = "reviewImgListId"))
     private List<String> reviewImgList = new ArrayList<>();
