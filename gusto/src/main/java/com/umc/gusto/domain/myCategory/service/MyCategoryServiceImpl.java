@@ -16,6 +16,7 @@ import com.umc.gusto.domain.store.entity.Store;
 import com.umc.gusto.domain.user.entity.User;
 import com.umc.gusto.domain.user.repository.UserRepository;
 import com.umc.gusto.global.common.BaseEntity;
+import com.umc.gusto.global.common.PublishStatus;
 import com.umc.gusto.global.exception.Code;
 import com.umc.gusto.global.exception.GeneralException;
 import lombok.RequiredArgsConstructor;
@@ -50,24 +51,24 @@ public class MyCategoryServiceImpl implements MyCategoryService {
             if (nickname.equals(user.getNickname())) {
                 throw new GeneralException(Code.USER_NOT_FOUND_SELF);
             }
-            user = userRepository.findByNickname(nickname)
+
+            user = userRepository.findByNickname(nickname)      // 타 닉네임 조회
                     .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND));
             if (myCategoryId != null) {
-                myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPublicPaging(user, myCategoryId, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
+                myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPublicPaging(user, myCategoryId, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));     // 받아온 nickname과 User의 nickname 값이 다른 경우(쿼리문 사용)
             } else {
                 myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPublic(user, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
             }
-        } else {
+        } else {    // 내 카테고리 조회
             if (myCategoryId != null) {
-                myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPaging(user, myCategoryId, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));   // 받아온 nickname과 User의 nickname 값이 다른 경우(쿼리문 사용)
+                myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPaging(user, myCategoryId, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
             } else {
-                myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategory(user, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));   // 받아온 nickname과 User의 nickname 값이 다른 경우(쿼리문 사용)
+                myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategory(user, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
             }
 
         }
+
         User finalUser = user;
-
-
         List<MyCategoryResponse> result = myCategoryList.stream()
                 .map(myCategory -> {
                     List<Pin> pinList;
@@ -81,8 +82,9 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                             .myCategoryName(myCategory.getMyCategoryName())
                             .myCategoryScript(myCategory.getMyCategoryScript())
                             .myCategoryIcon(myCategory.getMyCategoryIcon())
-                            .publishCategory(finalUser.getPublishCategory())
-                            .pinCnt(pinList.size())            // pin 개수 받아오기로 변경
+                            .userPublishCategory(nickname == null ? finalUser.getPublishCategory() : null)        // user의 publishCategory는 본인만 볼 수 있게
+                            .publishCategory(myCategory.getPublishCategory())
+                            .pinCnt(pinList.size())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -91,7 +93,6 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 .hasNext(myCategoryList.hasNext())
                 .result(result)
                 .build();
-
     }
 
     @Transactional(readOnly = true)
@@ -107,7 +108,7 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 }
             user = userRepository.findByNickname(nickname)
                     .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND));
-            myCategory = myCategoryRepository.findByMyCategoryPublicIdAndUserNickname(nickname, myCategoryId);
+            myCategory = myCategoryRepository.findByMyCategoryPublicIdAndUserNickname(nickname, myCategoryId);          // PUBLIC 값에 따라 보이는 CATEGORY 처리, PIN에서까지 하지않아도 됨
         } else {
             myCategory = myCategoryRepository.findByMyCategoryIdAndUserNickname(user.getNickname(), myCategoryId);
         }
@@ -191,6 +192,25 @@ public class MyCategoryServiceImpl implements MyCategoryService {
 
 
     @Transactional
+    public void savePublishCategory(User user, PublishStatus publishCategory) {
+        List<MyCategory> myCategoryList = myCategoryRepository.findByUser(user);
+
+        if (publishCategory.equals(PublishStatus.PRIVATE)) {
+            for (MyCategory myCategory: myCategoryList) {
+                myCategory.updatePreviousPublishCategory(myCategory.getPublishCategory());
+                myCategory.updatePublishCategory(PublishStatus.PRIVATE);
+            }
+            myCategoryRepository.saveAll(myCategoryList);
+        } else {
+            for (MyCategory myCategory: myCategoryList) {
+                myCategory.updatePublishCategory(myCategory.getPreviousPublishCategory());
+            }
+            myCategoryRepository.saveAll(myCategoryList);
+        }
+        userRepository.save(user);
+    }
+
+    @Transactional
     public void createMyCategory(User user, CreateMyCategoryRequest createMyCategory) {
         // 중복 이름 체크
         myCategoryRepository.findByMyCategoryNameAndUser(createMyCategory.getMyCategoryName(), user)
@@ -203,6 +223,7 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 .myCategoryName(createMyCategory.getMyCategoryName())
                 .myCategoryIcon(createMyCategory.getMyCategoryIcon())
                 .myCategoryScript(createMyCategory.getMyCategoryScript())
+                .publishCategory(createMyCategory.getPublishCategory())
                 .user(user)
                 .build();
 
@@ -233,6 +254,14 @@ public class MyCategoryServiceImpl implements MyCategoryService {
 
         if (updateMyCategory.getMyCategoryScript() != null) {
             existingMyCategory.updateMyCategoryScript(updateMyCategory.getMyCategoryScript());
+        }
+
+        if (updateMyCategory.getPublishCategory() != null) {          // USER의 publishCategory가 PUBLIC이여야만 변경 가능
+            if (user.getPublishCategory().equals(PublishStatus.PUBLIC)) {
+                existingMyCategory.updatePublishCategory(updateMyCategory.getPublishCategory());
+            } else {
+                throw new GeneralException(Code.USER_PUBLISH_CATEGORY_PRIVATE);
+            }
         }
 
         myCategoryRepository.save(existingMyCategory);
