@@ -22,7 +22,7 @@ public class ReviewImageServiceImpl {
     private final ReviewImagesRepository reviewImagesRepository;
 
     @Transactional
-    @Scheduled(cron = "0 0 0 * * MON")
+    @Scheduled(cron = "0 0 0 1,16 * ?")
     public void updateStoreReviewImages() {
         List<Store> stores = storeRepository.findAll();
 
