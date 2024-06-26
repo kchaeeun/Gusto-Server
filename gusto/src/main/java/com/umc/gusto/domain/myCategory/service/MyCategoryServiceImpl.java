@@ -173,9 +173,9 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                             .storeId(store.getStoreId())
                             .storeName(store.getStoreName())
                             .address(store.getAddress())
-                            .img1(store.getImg1())
-                            .img2(store.getImg2())
-                            .img3(store.getImg3())
+                            .img1(store.getImg1() != null ? store.getImg1() : "")
+                            .img2(store.getImg2() != null ? store.getImg2() : "")
+                            .img3(store.getImg3() != null ? store.getImg3() : "")
                             .reviewCnt(reviewCnt)
                             .build();
                 })
