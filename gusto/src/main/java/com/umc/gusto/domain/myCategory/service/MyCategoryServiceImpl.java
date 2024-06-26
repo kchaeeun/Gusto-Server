@@ -9,8 +9,6 @@ import com.umc.gusto.domain.myCategory.model.response.PagingResponse;
 import com.umc.gusto.domain.myCategory.model.response.PinByMyCategoryResponse;
 import com.umc.gusto.domain.myCategory.repository.MyCategoryRepository;
 import com.umc.gusto.domain.myCategory.repository.PinRepository;
-import com.umc.gusto.domain.review.entity.ReviewImages;
-import com.umc.gusto.domain.review.repository.ReviewImagesRepository;
 import com.umc.gusto.domain.review.repository.ReviewRepository;
 import com.umc.gusto.domain.store.entity.Store;
 import com.umc.gusto.domain.user.entity.User;
@@ -38,7 +36,6 @@ public class MyCategoryServiceImpl implements MyCategoryService {
     private final PinRepository pinRepository;
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
-    private final ReviewImagesRepository reviewImagesRepository;
 
     private static final int MY_CATEGORY_PAGE_SIZE = 7;
     private static final int PIN_PAGE_SIZE = 5;
@@ -168,8 +165,7 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 .map(pin -> {
                     Store store = pin.getStore();
                     // 가장 좋아요가 많은 review
-                    ReviewImages reviewImages = reviewImagesRepository.findByStore(store);                                                                  // 가장 좋아요가 많은 review 이미지 3개
-                    List<String> top3ReviewImages = reviewImages.getReviewImgList().subList(0, Math.min(3, reviewImages.getReviewImgList().size()));        // 리뷰 이미지 리스트의 크기가 3개보다 작을 경우에도 인덱스 오류를 방지하
+
                     Integer reviewCnt = reviewRepository.countByStoreAndUserNickname(store, finalUser.getNickname());                                       // 내가 작성한 리뷰의 개수 == 방문 횟수
 
                     return  PinByMyCategoryResponse.builder()
@@ -177,7 +173,9 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                             .storeId(store.getStoreId())
                             .storeName(store.getStoreName())
                             .address(store.getAddress())
-                            .reviewImg3(top3ReviewImages)
+                            .img1(store.getImg1())
+                            .img2(store.getImg2())
+                            .img3(store.getImg3())
                             .reviewCnt(reviewCnt)
                             .build();
                 })
