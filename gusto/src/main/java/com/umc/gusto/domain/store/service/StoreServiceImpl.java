@@ -178,8 +178,6 @@ public class StoreServiceImpl implements StoreService{
 
         for (Pin pin : pins){
             Store store = pin.getStore();
-            Optional<Review> topReviewOptional = reviewRepository.findFirstByStoreOrderByLikedDesc(store);
-            String reviewImg = topReviewOptional.map(Review::getImg1).orElse("");
             boolean hasVisited = reviewRepository.existsByStoreAndUserNickname(store, user.getNickname());
 
             GetStoreInfoResponse getStoreInfoResponse = GetStoreInfoResponse.builder()
@@ -187,7 +185,7 @@ public class StoreServiceImpl implements StoreService{
                     .categoryString(store.getCategoryString())
                     .storeName(store.getStoreName())
                     .address(store.getAddress())
-                    .reviewImg(reviewImg)
+                    .img1(store.getImg1() != null ? store.getImg1() : "")
                     .build();
 
             if(!hasVisited){
@@ -225,14 +223,12 @@ public class StoreServiceImpl implements StoreService{
 
         return searchResult.stream()
                 .map(result -> {
-                    Optional<Review> review = reviewRepository.findFirstByStoreOrderByLikedDesc(result);
-                    String reviewImg = review.map(Review::getImg1).orElse("");
                     return GetStoreInfoResponse.builder()
                             .storeId(result.getStoreId())
                             .storeName(result.getStoreName())
                             .categoryString(result.getCategoryString())
                             .address(result.getAddress())
-                            .reviewImg(reviewImg)
+                            .img1(result.getImg1() != null ? result.getImg1() : "")
                             .build();
                 })
                 .collect(Collectors.toList());

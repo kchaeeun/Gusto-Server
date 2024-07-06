@@ -14,5 +14,5 @@ public class GetStoreInfoResponse {
     String categoryString;
     String storeName;
     String address;
-    String reviewImg;
+    String img1;
 }
