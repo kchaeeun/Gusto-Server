@@ -3,6 +3,7 @@ package com.umc.gusto.domain.review.service;
 import com.umc.gusto.domain.review.model.request.CreateReviewRequest;
 import com.umc.gusto.domain.review.model.request.UpdateReviewRequest;
 import com.umc.gusto.domain.review.model.response.ReviewDetailResponse;
+import com.umc.gusto.domain.store.entity.Store;
 import com.umc.gusto.domain.user.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,4 +17,5 @@ public interface ReviewService {
     ReviewDetailResponse getReview(Long reviewId);
     void likeReview(User user, Long reviewId);
     void unlikeReview(User user, Long reviewId);
+    void updateStoreImages(Store store);
 }

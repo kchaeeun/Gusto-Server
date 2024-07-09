@@ -22,15 +22,17 @@ import com.umc.gusto.global.exception.customException.NoPermission;
 import com.umc.gusto.global.exception.customException.NotFoundException;
 import com.umc.gusto.global.exception.customException.PrivateItemException;
 import com.umc.gusto.global.util.S3Service;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -214,6 +216,17 @@ public class ReviewServiceImpl implements ReviewService{
         if(imageUrls.size()>1) review.updateImg2(imageUrls.get(1));
         if(imageUrls.size()>2) review.updateImg3(imageUrls.get(2));
         if(imageUrls.size()>3) review.updateImg4(imageUrls.get(3));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)                                              // 메소드가 호출될 때마다 새로운 트랜잭션이 시작됨을 의미
+    public void updateStoreImages(Store store) {
+        List<Review> top4Reviews = reviewRepository.findFirst4ByStoreOrderByLikedDesc(store);
+        List<String> reviewImages = top4Reviews.stream()
+                .map(Review::getImg1)
+                .collect(Collectors.toList());
+
+        store.updateImages(reviewImages);
+        storeRepository.save(store);
     }
 
 }

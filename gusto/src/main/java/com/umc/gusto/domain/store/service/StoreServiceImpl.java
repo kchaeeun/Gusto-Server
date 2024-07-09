@@ -4,6 +4,7 @@ import com.umc.gusto.domain.myCategory.entity.Pin;
 import com.umc.gusto.domain.myCategory.repository.PinRepository;
 import com.umc.gusto.domain.review.entity.Review;
 import com.umc.gusto.domain.review.repository.ReviewRepository;
+import com.umc.gusto.domain.review.service.ReviewService;
 import com.umc.gusto.domain.store.entity.OpeningHours;
 import com.umc.gusto.domain.store.entity.Store;
 import com.umc.gusto.domain.store.model.response.*;
@@ -30,6 +31,8 @@ public class StoreServiceImpl implements StoreService{
     private final ReviewRepository reviewRepository;
     private final PinRepository pinRepository;
     private final OpeningHoursRepository openingHoursRepository;
+    private final ReviewService reviewService;
+
     private static final int PAGE_SIZE_FIRST = 3;
     private static final int PAGE_SIZE = 6;
 
@@ -234,19 +237,14 @@ public class StoreServiceImpl implements StoreService{
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+    //
     @Scheduled(cron = "0 0 0 1,16 * ?")
-    public void updateStoreReviewImages() {
+    public void updateAllStoreImages() {
         List<Store> stores = storeRepository.findAll();
 
         for (Store store : stores) {
-            List<Review> top4Reviews = reviewRepository.findFirst4ByStoreOrderByLikedDesc(store);
-            List<String> reviewImages = top4Reviews.stream()
-                    .map(Review::getImg1)
-                    .collect(Collectors.toList());
-
-            store.updateImages(reviewImages);
-            storeRepository.save(store);
+            reviewService.updateStoreImages(store);
         }
     }
+
 }
