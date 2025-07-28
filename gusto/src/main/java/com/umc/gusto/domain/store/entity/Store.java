@@ -1,6 +1,5 @@
 package com.umc.gusto.domain.store.entity;
 
-import com.umc.gusto.domain.myCategory.entity.MyCategory;
 import com.umc.gusto.global.common.BaseTime;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,6 +28,10 @@ public class Store extends BaseTime {
 
     @Column(columnDefinition = "DOUBLE(17,15)")
     private Double latitude;
+
+    // 인덱싱 처리를 위한 point 타입 컬럼 추가
+    @Column(columnDefinition = "POINT")
+    private String location;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "categoryId")
@@ -66,5 +69,15 @@ public class Store extends BaseTime {
     public enum StoreStatus {
         ACTIVE, INACTIVE, CLOSED
     }
+
+    // store 생성 시 location을 위도/경도 값으로 세팅
+    @PrePersist
+    @PreUpdate
+    public void updateLocation() {
+        if (longitude != null && latitude != null) {
+            this.location = String.format("POINT(%f %f)", longitude, latitude);
+        }
+    }
+
 }
 

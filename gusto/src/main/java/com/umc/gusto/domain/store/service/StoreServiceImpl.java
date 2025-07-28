@@ -149,10 +149,10 @@ public class StoreServiceImpl implements StoreService{
     }
 
     @Transactional(readOnly = true)
-    public List<GetStoresInMapResponse> getStoresInMap(User user, String townCode, List<Long> myCategoryIds, Boolean visited) {
+    public List<GetStoresInMapResponse> getStoresInMap(User user, Double latitude, Double longitude, int radius, List<Long> myCategoryIds, Boolean visited) {
         List<Pin> pins = new ArrayList<>();
         if (myCategoryIds == null || myCategoryIds.isEmpty()) {
-            pins = pinRepository.findPinsByUserAndTownCodeAndPinIdDESC(user, townCode);
+            pins = pinRepository.findPinsByUserAndTownCodeAndPinIdDESC(user, latitude, longitude, radius);
         } else {
             for (Long myCategoryId : myCategoryIds) {
                 pins.addAll(pinRepository.findPinsByUserAndMyCategoryIdAndTownCodeAndPinIdDESC(user, myCategoryId, townCode));
@@ -194,7 +194,7 @@ public class StoreServiceImpl implements StoreService{
     }
 
     @Transactional(readOnly = true)
-    public List<GetPinStoreResponse> getPinStoresByCategoryAndLocation(User user, Long myCategoryId, String townCode) {
+    public List<GetPinStoreResponse> getPinStoresByCategoryAndLocation(User user, Long myCategoryId, Double latitude, Double longitude, int radius) {
 
         List<Pin> pins = pinRepository.findPinsByUserAndMyCategoryIdAndTownCodeAndPinIdDESC(user, myCategoryId, townCode);
         if(myCategoryId == null){
@@ -247,7 +247,7 @@ public class StoreServiceImpl implements StoreService{
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getPinStoresInfo(User user, Long myCategoryId, String townCode, boolean visited, Long lastStoreId, int size) {
+    public Map<String, Object> getPinStoresInfo(User user, Long myCategoryId, Double latitude, Double longitude, int radius, boolean visited, Long lastStoreId, int size) {
         List<Pin> pins = pinRepository.findPinsByUserAndMyCategoryIdAndTownCodeAndPinIdDESC(user, myCategoryId, townCode);
         if(myCategoryId == null){
             pins = pinRepository.findPinsByUserAndTownCodeAndPinIdDESC(user, townCode);
@@ -291,12 +291,12 @@ public class StoreServiceImpl implements StoreService{
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getVisitedPinStores(User user, Long myCategoryId, String townCode, Long lastStoreId, int size) {
+    public Map<String, Object> getVisitedPinStores(User user, Long myCategoryId, Double latitude, Double longitude, int radius, Long lastStoreId, int size) {
         return getPinStoresInfo(user, myCategoryId, townCode, true, lastStoreId, size);
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getUnvisitedPinStores(User user, Long myCategoryId, String townCode,  Long lastStoreId, int size) {
+    public Map<String, Object> getUnvisitedPinStores(User user, Long myCategoryId, Double latitude, Double longitude, int radius,  Long lastStoreId, int size) {
         return getPinStoresInfo(user, myCategoryId, townCode, false, lastStoreId, size);
     }
 
