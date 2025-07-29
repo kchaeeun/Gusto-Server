@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface PinRepository extends JpaRepository<Pin, Long> {
     @Query("SELECT p FROM Pin p " +
@@ -110,12 +111,15 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
             "ORDER BY p.store.storeName ASC, p.pinId DESC"
     )
     Page<Pin> findPinsByMyCategoryAndStoreNameASCPaging(MyCategory myCategory, Long pinId, String storeName, Pageable pageable);
-    @Query("SELECT p FROM Pin p " +
-            "WHERE p.user = :user " +
-            "AND p.myCategory.myCategoryId = :myCategoryId " +
-            "AND p.store.town.townCode = :townCode " +
-            "ORDER BY p.pinId DESC")
-    List<Pin> findPinsByUserAndMyCategoryIdAndTownCodeAndPinIdDESC(User user, Long myCategoryId, String townCode);
+    @Query(value = """
+        SELECT * FROM Pin p
+        JOIN Store s ON p.store_id = s.store_id
+        WHERE p.user_id = :userId
+            AND p.myCategory_id = :myCategoryId
+            AND ST_Distance_Sphere(s.location, POINT(:longitude, :latitude)) <= :radius
+        ORDER BY p.pin_id DESC
+    """, nativeQuery = true)
+    List<Pin> findPinsByUserAndMyCategoryIdWithinRadiusPinIdDESC(User user, Long myCategoryId, Double latitude, Double longitude, int radius);
     Optional<Pin> findByUserAndPinId(User user, Long pinId);
     boolean existsByUserAndStoreStoreId(User user, Long storeId);       // 존재 여부
     @Query("SELECT p.store.storeId FROM Pin p WHERE p.user = :user AND p.myCategory.myCategoryId = :myCategoryId AND p.user.publishCategory = 'PUBLIC'")
@@ -124,12 +128,14 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
     List<Long> findStoreIdsByUser(User user);
     @Query("SELECT p.pinId FROM Pin p WHERE p.user = :user AND p.store.storeId = :storeId")
     Long findByUserAndStoreStoreId(User user, Long storeId);
-    @Query("SELECT p FROM Pin p " +
-            "JOIN p.store s " +
-            "JOIN s.town t " +
-            "JOIN p.user u " +
-            "WHERE p.user = :user " +
-            "AND t.townCode = :townCode " +
-            "ORDER BY p.pinId DESC")
-    List<Pin> findPinsByUserAndTownCodeAndPinIdDESC(User user, String townCode);
+
+    // 네이티브 쿼리
+    @Query(value = """
+        SELECT * FROM Pin p
+        JOIN Store s ON p.store_id = s.store_id
+        WHERE p.user_id = :userId
+            AND ST_Distance_Sphere(s.location, POINT(:longitude, :latitude)) <= :radius
+        ORDER BY p.pin_id DESC
+    """, nativeQuery = true)
+    List<Pin> findPinsByUserWithinRadiusPinIdDESC(UUID userId, Double latitude, Double longitude, int radius);
 }
