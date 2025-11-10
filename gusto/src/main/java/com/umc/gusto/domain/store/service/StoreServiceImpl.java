@@ -159,10 +159,10 @@ public class StoreServiceImpl implements StoreService{
 
         List<Pin> pins = new ArrayList<>();
         if (myCategoryIds == null || myCategoryIds.isEmpty()) {
-            pins = pinRepository.findPinsByUserWithinRadiusPinIdDESC(userId, longitude, latitude, radius);
+            pins = pinRepository.findPinsByRadiusPinIdDESC(longitude, latitude, radius);
         } else {
             for (Long myCategoryId : myCategoryIds) {
-                pins.addAll(pinRepository.findPinsByUserAndMyCategoryIdWithinRadiusPinIdDESC(userId, myCategoryId, longitude, latitude, radius));
+                pins.addAll(pinRepository.findPinsByMyCategoryIdWithinRadiusPinIdDESC(myCategoryId, longitude, latitude, radius));
             }
         }
 

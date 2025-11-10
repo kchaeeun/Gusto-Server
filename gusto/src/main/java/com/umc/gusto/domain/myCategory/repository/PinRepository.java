@@ -123,13 +123,11 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
         p.updated_at AS updated_at
     FROM pin p
     JOIN store s ON p.store_id = s.store_id
-    WHERE p.user_id = UNHEX(REPLACE(:userId, '-', ''))
-      AND p.my_category_id = :myCategoryId
+    WHERE p.my_category_id = :myCategoryId
       AND ST_Distance_Sphere(s.location, ST_SRID(Point(:longitude, :latitude), 4326)) <= :radius
     ORDER BY p.pin_id DESC
 """, nativeQuery = true)
-    List<Pin> findPinsByUserAndMyCategoryIdWithinRadiusPinIdDESC(
-            @Param("userId") String userId,
+    List<Pin> findPinsByMyCategoryIdWithinRadiusPinIdDESC(
             @Param("myCategoryId") Long myCategoryId,
             @Param("longitude") Double longitude,
             @Param("latitude") Double latitude,
@@ -161,12 +159,10 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
         p.updated_at AS updated_at
     FROM pin p
     JOIN store s ON p.store_id = s.store_id
-    WHERE p.user_id = UNHEX(REPLACE(:userId, '-', ''))
-      AND ST_Distance_Sphere(s.location, ST_SRID(Point(:longitude, :latitude), 4326)) <= :radius
+    WHERE ST_Distance_Sphere(s.location, ST_SRID(Point(:longitude, :latitude), 4326)) <= :radius
     ORDER BY p.pin_id DESC
 """, nativeQuery = true)
-    List<Pin> findPinsByUserWithinRadiusPinIdDESC(
-            @Param("userId") String userId,
+    List<Pin> findPinsByRadiusPinIdDESC(
             @Param("longitude") Double longitude,
             @Param("latitude") Double latitude,
             @Param("radius") int radius
