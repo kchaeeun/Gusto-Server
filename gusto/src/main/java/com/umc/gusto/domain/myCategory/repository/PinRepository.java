@@ -175,4 +175,6 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
             "AND t.townCode = :townCode " +
             "ORDER BY p.pinId DESC")
     List<Pin> findPinsByUserAndTownCodeAndPinIdDESC(User user, String townCode);
+    @Query("SELECT COUNT(p) FROM Pin p JOIN p.myCategory m WHERE p.user = :user AND p.user.publishCategory = 'PUBLIC' AND m.publishCategory = 'PUBLIC'")
+    Integer countPinByUser(User user);
 }

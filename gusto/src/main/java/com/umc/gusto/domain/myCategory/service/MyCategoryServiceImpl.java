@@ -81,7 +81,9 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 })
                 .collect(Collectors.toList());
 
+        Integer allPinCnt = pinRepository.countPinByUser(user);    // 찜한 전체 개수
         return PagingResponse.builder()
+                .allPinCnt(allPinCnt)
                 .hasNext(myCategoryList.hasNext())
                 .result(result)
                 .build();
