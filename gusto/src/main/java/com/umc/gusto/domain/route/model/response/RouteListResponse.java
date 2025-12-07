@@ -22,4 +22,5 @@ public class RouteListResponse {
     private String storeName;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String address;
+    private String contact;
 }
