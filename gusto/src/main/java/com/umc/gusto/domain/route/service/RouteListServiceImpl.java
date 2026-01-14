@@ -157,6 +157,7 @@ public class RouteListServiceImpl implements RouteListService{
                         .storeName(rL.getStore().getStoreName())
                         .address(rL.getStore().getAddress())
                         .ordinal(rL.getOrdinal())
+                        .contact(rL.getStore().getContact())
                         .build()
         ).toList();
 
