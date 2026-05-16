@@ -3,6 +3,7 @@ package com.umc.gusto.domain.myCategory.repository;
 import com.umc.gusto.domain.myCategory.entity.MyCategory;
 import com.umc.gusto.domain.myCategory.entity.Pin;
 import com.umc.gusto.domain.user.entity.User;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface PinRepository extends JpaRepository<Pin, Long> {
     @Query("SELECT p FROM Pin p " +
@@ -110,6 +112,27 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
             "ORDER BY p.store.storeName ASC, p.pinId DESC"
     )
     Page<Pin> findPinsByMyCategoryAndStoreNameASCPaging(MyCategory myCategory, Long pinId, String storeName, Pageable pageable);
+    // 네이티브 쿼리
+    @Query(value = """
+    SELECT 
+        p.pin_id AS pin_id,
+        p.user_id AS user_id,
+        p.store_id AS store_id,
+        p.my_category_id AS my_category_id,
+        p.created_at AS created_at,
+        p.updated_at AS updated_at
+    FROM pin p
+    JOIN store s ON p.store_id = s.store_id
+    WHERE p.my_category_id = :myCategoryId
+      AND ST_Distance_Sphere(s.location, ST_SRID(Point(:longitude, :latitude), 4326)) <= :radius
+    ORDER BY p.pin_id DESC
+""", nativeQuery = true)
+    List<Pin> findPinsByMyCategoryIdWithinRadiusPinIdDESC(
+            @Param("myCategoryId") Long myCategoryId,
+            @Param("longitude") Double longitude,
+            @Param("latitude") Double latitude,
+            @Param("radius") int radius
+    );
     @Query("SELECT p FROM Pin p " +
             "WHERE p.user = :user " +
             "AND p.myCategory.myCategoryId = :myCategoryId " +
@@ -124,6 +147,26 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
     List<Long> findStoreIdsByUser(User user);
     @Query("SELECT p.pinId FROM Pin p WHERE p.user = :user AND p.store.storeId = :storeId")
     Long findByUserAndStoreStoreId(User user, Long storeId);
+
+    // 네이티브 쿼리
+    @Query(value = """
+    SELECT 
+        p.pin_id AS pin_id,
+        p.user_id AS user_id,
+        p.my_category_id AS my_category_id,
+        p.store_id AS store_id,
+        p.created_at AS created_at,
+        p.updated_at AS updated_at
+    FROM pin p
+    JOIN store s ON p.store_id = s.store_id
+    WHERE ST_Distance_Sphere(s.location, ST_SRID(Point(:longitude, :latitude), 4326)) <= :radius
+    ORDER BY p.pin_id DESC
+""", nativeQuery = true)
+    List<Pin> findPinsByRadiusPinIdDESC(
+            @Param("longitude") Double longitude,
+            @Param("latitude") Double latitude,
+            @Param("radius") int radius
+    );
     @Query("SELECT p FROM Pin p " +
             "JOIN p.store s " +
             "JOIN s.town t " +
@@ -132,4 +175,8 @@ public interface PinRepository extends JpaRepository<Pin, Long> {
             "AND t.townCode = :townCode " +
             "ORDER BY p.pinId DESC")
     List<Pin> findPinsByUserAndTownCodeAndPinIdDESC(User user, String townCode);
+    @Query("SELECT COUNT(p) FROM Pin p WHERE p.user = :user")
+    Integer countPinByUser(User user);
+    @Query("SELECT COUNT(p) FROM Pin p JOIN p.myCategory m WHERE p.user = :user AND p.user.publishCategory = 'PUBLIC' AND m.publishCategory = 'PUBLIC'")
+    Integer countPinByUserPublic(User user);
 }

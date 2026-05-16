@@ -43,6 +43,8 @@ public class MyCategoryServiceImpl implements MyCategoryService {
     @Transactional(readOnly = true)
     public PagingResponse getAllMyCategory(User user, String nickname, String townCode, Long myCategoryId) {
         Page<MyCategory> myCategoryList;
+        Integer allPinCnt;
+
         if (nickname != null) {
             user = userRepository.findByNickname(nickname)      // 타 닉네임 조회
                     .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND));
@@ -51,13 +53,14 @@ public class MyCategoryServiceImpl implements MyCategoryService {
             } else {
                 myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPublic(user, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
             }
+            allPinCnt = pinRepository.countPinByUserPublic(user);
         } else {    // 내 카테고리 조회
             if (myCategoryId != null) {
                 myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategoryPaging(user, myCategoryId, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
             } else {
                 myCategoryList = myCategoryRepository.findByUserNicknameAndPublishCategory(user, Pageable.ofSize(MY_CATEGORY_PAGE_SIZE));
             }
-
+            allPinCnt = pinRepository.countPinByUser(user);
         }
 
         User finalUser = user;
@@ -82,6 +85,7 @@ public class MyCategoryServiceImpl implements MyCategoryService {
                 .collect(Collectors.toList());
 
         return PagingResponse.builder()
+                .allPinCnt(allPinCnt)
                 .hasNext(myCategoryList.hasNext())
                 .result(result)
                 .build();
@@ -207,7 +211,7 @@ public class MyCategoryServiceImpl implements MyCategoryService {
 
 
     @Transactional
-    public void modifyMyCategory(User user, Long myCategoryId, UpdateMyCategoryRequest updateMyCategory) {
+    public void updateMyCategory(User user, Long myCategoryId, UpdateMyCategoryRequest updateMyCategory) {
         MyCategory existingMyCategory = myCategoryRepository.findByUserAndMyCategoryId(user,myCategoryId)
                 .orElseThrow(() -> new GeneralException(Code.MY_CATEGORY_NOT_FOUND));
 
